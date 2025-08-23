@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kcal ↔ kJ Converter</title>
+    <meta name="description" content="Convert between kcal and kJ, calculate macro energy, per-100g to per-serving conversions, daily targets, and save favorite foods">
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Tailwind CSS via CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        // Tailwind CDN config: expose custom tokens backed by CSS variables (RGB so opacity works)
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Inter','ui-sans-serif','system-ui'] },
+                    colors: {
+                        bg: 'rgb(var(--c-bg) / <alpha-value>)',
+                        surface: 'rgb(var(--c-surface) / <alpha-value>)',
+                        surface2: 'rgb(var(--c-surface-2) / <alpha-value>)',
+                        border: 'rgb(var(--c-border) / <alpha-value>)',
+                        text: 'rgb(var(--c-text) / <alpha-value>)',
+                        muted: 'rgb(var(--c-muted) / <alpha-value>)',
+                        primary: 'rgb(var(--c-primary) / <alpha-value>)',
+                        'primary-foreground': 'rgb(var(--c-primary-foreground) / <alpha-value>)',
+                        accent: 'rgb(var(--c-accent) / <alpha-value>)',
+                        'accent-foreground': 'rgb(var(--c-accent-foreground) / <alpha-value>)',
+                        success: 'rgb(var(--c-success) / <alpha-value>)',
+                        warning: 'rgb(var(--c-warning) / <alpha-value>)',
+                        danger: 'rgb(var(--c-danger) / <alpha-value>)',
+                    }
+                }
+            }
+        };
+    </script>
+
+         <style>
+         /* Light — "Spring Blossom" (RGB triplets) */
+         :root {
+             --c-bg: 255 248 252;     /* #FFF8FC soft pink-white */
+             --c-surface: 255 242 250;/* #FFF2FA pale pink */
+             --c-surface-2: 252 235 245;/* #FCEBF5 soft lavender-pink */
+             --c-border: 235 218 230; /* #EBD6E6 light purple-gray */
+             --c-text: 75 55 85;      /* #4B3755 deep purple-gray */
+             --c-muted: 120 100 130;  /* #786482 muted purple */
+ 
+             --c-primary: 200 120 180;           /* #C878B4 soft magenta */
+             --c-primary-foreground: 255 248 252;   /* #FFF8FC light pink-white */
+             --c-accent: 180 140 200;            /* #B48CC8 soft lavender */
+             --c-accent-foreground: 75 55 85;    /* #4B3755 deep purple-gray */
+ 
+             --c-success: 140 180 140; /* soft sage */
+             --c-warning: 220 180 140; /* soft peach */
+             --c-danger: 200 140 160;  /* soft rose */
+ 
+             color-scheme: light;
+             background: linear-gradient(135deg, rgb(var(--c-bg)) 0%, rgb(255 245 250) 50%, rgb(252 240 248) 100%);
+         }
+
+                 /* Dark — "Blueberry Milk" */
+         [data-theme="dark"] {
+             --c-bg: 18 22 33;        /* #121621 */
+             --c-surface: 25 31 45;   /* #191F2D */
+             --c-surface-2: 32 40 58; /* #20283A */
+             --c-border: 56 68 96;    /* #384460 */
+             --c-text: 232 240 255;   /* #E8F0FF */
+             --c-muted: 184 197 220;  /* #B8C5DC */
+ 
+             --c-primary: 186 200 255;           /* #BAC8FF periwinkle */
+             --c-primary-foreground: 12 18 34;   /* #0C1222 */
+             --c-accent: 166 224 217;            /* #A6E0D9 seafoam */
+             --c-accent-foreground: 9 18 20;     /* #091214 */
+ 
+             --c-success: 182 232 208; /* #B6E8D0 */
+             --c-warning: 248 221 160; /* #F8DDA0 */
+             --c-danger: 242 177 177;  /* #F2B1B1 */
+ 
+             color-scheme: dark;
+             background: linear-gradient(135deg, rgb(var(--c-bg)) 0%, rgb(22 28 42) 50%, rgb(25 31 45) 100%);
+         }
+         
+         /* Gradient backgrounds for cards */
+         .bg-surface {
+             background: linear-gradient(135deg, rgb(var(--c-surface)) 0%, rgb(var(--c-surface-2)) 100%);
+         }
+         
+         .bg-surface2 {
+             background: linear-gradient(135deg, rgb(var(--c-surface-2)) 0%, rgb(var(--c-surface)) 100%);
+         }
+         
+         /* Header gradient */
+         .bg-surface\/80 {
+             background: linear-gradient(135deg, rgb(var(--c-surface) / 0.8) 0%, rgb(var(--c-surface-2) / 0.8) 100%);
+         }
+         
+         /* Footer gradient */
+         .bg-surface\/80 {
+             background: linear-gradient(135deg, rgb(var(--c-surface) / 0.8) 0%, rgb(var(--c-surface-2) / 0.8) 100%);
+         }
+    </style>
+    
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="manifest.webmanifest">
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🥗</text></svg>">
+    <link rel="icon" type="image/png" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48dGV4dCB5PSIuOWVtIiBmb250LXNpemU9IjkwIj7wn5K3PC90ZXh0Pjwvc3ZnPg==">
+    <link rel="shortcut icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🥗</text></svg>">
+    
+    <!-- Custom Styles -->
+    <link rel="stylesheet" href="styles.css">
+    
+    <!-- PWA Meta Tags -->
+    <meta name="theme-color" content="#10b981">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="Kcal/KJ">
+</head>
+<body class="bg-bg text-text transition-colors duration-200">
+    <!-- Header -->
+    <header class="sticky top-0 z-30 border-b border-border bg-surface/80 backdrop-blur supports-[backdrop-filter]:bg-surface/60">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center">
+                    <h1 class="text-xl font-bold text-text">🥗 Kcal ↔ kJ Converter</h1>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <button id="theme-toggle" class="p-2 rounded-xl bg-surface2 hover:bg-surface2/80 transition-colors" aria-label="Toggle dark mode">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path class="dark:hidden" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path>
+                            <path class="hidden dark:block" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path>
+                        </svg>
+                    </button>
+                    <div id="install-prompt" class="hidden">
+                        <button id="install-btn" class="inline-flex items-center justify-center rounded-xl bg-primary px-3 py-2 font-medium text-primary-foreground hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:ring-offset-2 focus:ring-offset-bg">
+                            Install App
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            
+            <!-- Left Column -->
+            <section class="lg:col-span-7 w-full space-y-6">
+                <!-- 1. Kcal ↔ kJ Converter -->
+                <div id="converter" class="bg-surface border border-border rounded-2xl shadow-[0_12px_30px_-12px] shadow-black/50 w-full p-5 sm:p-6">
+                    <h2 class="text-lg font-semibold tracking-tight mb-4">Kcal ↔ kJ Converter</h2>
+                    <p class="text-sm text-muted mb-4">Convert between kilocalories and kilojoules</p>
+                    
+                    <div class="space-y-4">
+                        <div>
+                            <label for="kcal-input" class="block text-sm font-medium text-text mb-2">Kilocalories (kcal)</label>
+                            <input type="number" id="kcal-input" inputmode="decimal" step="0.1" min="0" class="w-full rounded-xl bg-surface2 text-text border border-border px-4 py-3 text-base placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary/50" placeholder="0.0">
+                        </div>
+                        <div>
+                            <label for="kj-input" class="block text-sm font-medium text-text mb-2">Kilojoules (kJ)</label>
+                            <input type="number" id="kj-input" inputmode="decimal" step="0.1" min="0" class="w-full rounded-xl bg-surface2 text-text border border-border px-4 py-3 text-base placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary/50" placeholder="0.0">
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <p class="text-sm text-muted">1 kcal = 4.184 kJ</p>
+                                                         <button id="reset-converter" class="inline-flex items-center justify-center rounded-xl bg-primary px-4 py-2.5 font-medium text-primary-foreground hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:ring-offset-2 focus:ring-offset-bg transition-transform duration-150 hover:-translate-y-0.5 active:translate-y-0">
+                                 Reset
+                             </button>
+                        </div>
+                    </div>
+                </div>
+
+                        <!-- Right Column -->
+            <aside class="lg:col-span-5 w-full lg:sticky lg:top-6 space-y-6">
+                <!-- 2. Daily Calorie Targets (BMR/TDEE) -->
+                <div id="tdee" class="bg-surface border border-border rounded-2xl shadow-[0_12px_30px_-12px] shadow-black/50 w-full p-5 sm:p-6">
+                    <h2 class="text-lg font-semibold tracking-tight mb-4">Daily Calorie Targets (BMR/TDEE)</h2>
+                    <p class="text-sm text-muted mb-4">Estimates only. For medical advice, see a clinician.</p>
+                    
+                    <div class="space-y-4">
+                        <!-- Inputs Grid -->
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <!-- Sex Selection -->
+                            <div class="sm:col-span-2">
+                                <label class="block text-sm font-medium text-text mb-2">Sex</label>
+                                <div class="flex space-x-4">
+                                    <label class="flex items-center">
+                                        <input type="radio" id="sex-m" name="sex" value="m" checked class="mr-2">
+                                        <span class="text-sm font-medium text-text">Male</span>
+                                    </label>
+                                    <label class="flex items-center">
+                                        <input type="radio" id="sex-f" name="sex" value="f" class="mr-2">
+                                        <span class="text-sm font-medium text-text">Female</span>
+                                    </label>
+                                </div>
+                            </div>
+                            
+                                                         <!-- Age -->
+                             <div>
+                                 <label for="tdee-age" class="block text-sm font-medium text-text mb-2">Age (years)</label>
+                                 <input type="text" id="tdee-age" inputmode="decimal" class="w-full rounded-xl bg-surface2 text-text border border-border px-4 py-3 text-base placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary/50" placeholder="25">
+                             </div>
+                             
+                             <!-- Height -->
+                             <div>
+                                 <label for="tdee-height" class="block text-sm font-medium text-text mb-2">Height (cm)</label>
+                                 <input type="text" id="tdee-height" inputmode="decimal" class="w-full rounded-xl bg-surface2 text-text border border-border px-4 py-3 text-base placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary/50" placeholder="170">
+                             </div>
+                             
+                             <!-- Weight -->
+                             <div>
+                                 <label for="tdee-weight" class="block text-sm font-medium text-text mb-2">Weight (kg)</label>
+                                 <input type="text" id="tdee-weight" inputmode="decimal" class="w-full rounded-xl bg-surface2 text-text border border-border px-4 py-3 text-base placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary/50" placeholder="70">
+                             </div>
+                            
+                            <!-- Activity Level -->
+                            <div>
+                                <label for="tdee-activity" class="block text-sm font-medium text-text mb-2">Activity Level</label>
+                                <select id="tdee-activity" class="w-full rounded-xl bg-surface2 text-text border border-border px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary/50">
+                                    <option value="sedentary">Sedentary (little/no exercise) — 1.20</option>
+                                    <option value="light">Light (1–3x/wk) — 1.375</option>
+                                    <option value="moderate">Moderate (3–5x/wk) — 1.55</option>
+                                    <option value="very">Very (6–7x/wk) — 1.725</option>
+                                    <option value="extra">Extra (athlete/2x day) — 1.9</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                                                 <!-- Reset Button -->
+                         <div class="flex justify-end">
+                             <button onclick="resetTDEE()" class="inline-flex items-center justify-center rounded-xl bg-primary px-4 py-2.5 font-medium text-primary-foreground hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:ring-offset-2 focus:ring-offset-bg transition-transform duration-150 hover:-translate-y-0.5 active:translate-y-0">
+                                 Reset
+                             </button>
+                         </div>
+                        
+                        <!-- Results -->
+                        <div class="rounded-xl bg-surface2 border border-border w-full p-4 text-base leading-relaxed">
+                            <h3 class="text-sm font-medium text-text mb-3">Daily Targets</h3>
+                            <div class="space-y-3">
+                                <!-- Maintain -->
+                                <div class="flex justify-between items-center">
+                                    <span class="text-sm font-medium text-text">Maintain</span>
+                                    <div class="text-right">
+                                        <div id="tdee-maint-kcal" class="text-lg font-semibold text-primary">0 kcal</div>
+                                        <div id="tdee-maint-kj" class="text-sm text-muted">0 kJ</div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Slow -->
+                                <div class="flex justify-between items-center">
+                                    <span class="text-sm font-medium text-text">Slow (≈ 0.5 kg/week)</span>
+                                    <div class="text-right">
+                                        <div id="tdee-slow-kcal" class="text-lg font-semibold text-primary">0 kcal</div>
+                                        <div id="tdee-slow-kj" class="text-sm text-muted">0 kJ</div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Moderate -->
+                                <div class="flex justify-between items-center">
+                                    <span class="text-sm font-medium text-text">Moderate (≈ 0.75 kg/week)</span>
+                                    <div class="text-right">
+                                        <div id="tdee-mod-kcal" class="text-lg font-semibold text-primary">0 kcal</div>
+                                        <div id="tdee-mod-kj" class="text-sm text-muted">0 kJ</div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Rapid -->
+                                <div class="flex justify-between items-center">
+                                    <span class="text-sm font-medium text-text">Rapid (≈ 1.0 kg/week)</span>
+                                    <div class="text-right">
+                                        <div id="tdee-rapid-kcal" class="text-lg font-semibold text-primary">0 kcal</div>
+                                        <div id="tdee-rapid-kj" class="text-sm text-muted">0 kJ</div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Warning -->
+                                <div class="mt-3">
+                                    <span class="ml-2 text-danger hidden" id="tdee-rapid-warn">Aggressive deficit — consider medical guidance.</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+
+
+                                 <!-- 4. Daily Log v2 -->
+                 <div id="daily-card" class="bg-surface border border-border rounded-2xl shadow-[0_12px_30px_-12px] shadow-black/50 w-full p-5 sm:p-6">
+                     <h2 class="text-lg font-semibold tracking-tight mb-4">Daily Log</h2>
+                     <p class="text-sm text-muted mb-4">Track your daily energy intake</p>
+                     
+                     <div class="space-y-4">
+                         <!-- Top Controls -->
+                         <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                             <div class="sm:col-span-1">
+                                 <label for="daily-date" class="block text-sm font-medium text-text mb-2">Date</label>
+                                 <input type="date" id="daily-date" class="w-full rounded-xl bg-surface2 text-text border border-border px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary/50">
+                             </div>
+                             <div class="sm:col-span-1">
+                                 <label for="daily-target" class="block text-sm font-medium text-text mb-2">Daily Target </label>
+                                 <input type="number" id="daily-target" inputmode="decimal" step="1" min="0" class="w-full rounded-xl bg-surface2 text-text border border-border px-4 py-3 text-base placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary/50" placeholder="2000">
+                             </div>
+                             <div class="sm:col-span-1">
+                                 <label for="daily-unit" class="block text-sm font-medium text-text mb-2">Display Unit</label>
+                                 <select id="daily-unit" class="w-full rounded-xl bg-surface2 text-text border border-border px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary/50">
+                                     <option value="kcal">kcal</option>
+                                     <option value="kJ">kJ</option>
+                                 </select>
+                             </div>
+                         </div>
+                         
+                         <!-- Progress Bar -->
+                         <div class="rounded-xl bg-surface2 border border-border w-full p-4 text-base leading-relaxed">
+                             <div class="w-full h-3 rounded-full bg-surface2 overflow-hidden" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" id="daily-progress">
+                                 <div id="daily-progress-fill" class="h-full bg-success transition-[width] duration-300 ease-out" style="width:0%"></div>
+                             </div>
+                             <p id="daily-progress-text" class="mt-2 text-sm text-text">0 / 2000 kcal (0%) • 2000 kcal remaining</p>
+                         </div>
+                         
+                         <!-- Quick Add -->
+                         <div>
+                             <label class="block text-sm font-medium text-text mb-2">Quick Add</label>
+                             <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                                 <div class="sm:col-span-1">
+                                     <input type="number" id="daily-entry-value" inputmode="decimal" step="0.1" min="0" class="w-full rounded-xl bg-surface2 text-text border border-border px-4 py-3 text-base placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary/50" placeholder="0.0">
+                                 </div>
+                                 <div class="sm:col-span-1">
+                                     <select id="daily-entry-unit" class="w-full rounded-xl bg-surface2 text-text border border-border px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary/50">
+                                         <option value="kcal">kcal</option>
+                                         <option value="kJ">kJ</option>
+                                     </select>
+                                 </div>
+                                 <div class="sm:col-span-1">
+                                                                           <button id="add-daily-entry" class="w-full inline-flex items-center justify-center rounded-xl bg-primary px-4 py-2.5 font-medium text-primary-foreground hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:ring-offset-2 focus:ring-offset-bg disabled:opacity-50 transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0 hover:shadow-lg hover:shadow-primary/25">
+                                          Add
+                                      </button>
+                                 </div>
+                             </div>
+                             
+                             <!-- Preset Buttons -->
+                             <div class="flex flex-wrap gap-2 mt-3">
+                                 <button class="preset-btn inline-flex items-center justify-center rounded-lg bg-surface2 text-text border border-border px-3 py-1.5 text-sm font-medium hover:bg-surface2/80 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-colors" data-value="50">+50</button>
+                                 <button class="preset-btn inline-flex items-center justify-center rounded-lg bg-surface2 text-text border border-border px-3 py-1.5 text-sm font-medium hover:bg-surface2/80 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-colors" data-value="100">+100</button>
+                                 <button class="preset-btn inline-flex items-center justify-center rounded-lg bg-surface2 text-text border border-border px-3 py-1.5 text-sm font-medium hover:bg-surface2/80 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-colors" data-value="250">+250</button>
+                                 <button class="preset-btn inline-flex items-center justify-center rounded-lg bg-surface2 text-text border border-border px-3 py-1.5 text-sm font-medium hover:bg-surface2/80 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-colors" data-value="500">+500</button>
+                             </div>
+                         </div>
+                         
+                         <!-- Entries List -->
+                         <div>
+                             <h3 class="text-sm font-medium text-text mb-2">Today's Entries</h3>
+                             <ul id="daily-entries" class="space-y-2">
+                                 <!-- Entries will be populated by JavaScript -->
+                             </ul>
+                         </div>
+                         
+                         
+                     </div>
+                 </div>
+
+                <!-- 5. Favorites -->
+                <div id="favorites" class="bg-surface border border-border rounded-2xl shadow-[0_12px_30px_-12px] shadow-black/50 w-full p-5 sm:p-6">
+                    <h2 class="text-lg font-semibold tracking-tight mb-4">Favorites</h2>
+                    <p class="text-sm text-muted mb-4">Save and manage your favorite foods</p>
+                    
+                    <div class="space-y-4">
+                        <!-- Add New Favorite Form -->
+                        <div class="rounded-xl bg-surface2 border border-border w-full p-4">
+                            <h3 class="text-sm font-medium text-text mb-3">Add New Favorite</h3>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                                <div class="sm:col-span-1">
+                                    <label for="favorite-name" class="block text-xs font-medium text-text mb-1">Name</label>
+                                    <input type="text" id="favorite-name" class="w-full rounded-xl bg-surface2 text-text border border-border px-3 py-2 text-sm placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary/50" placeholder="Food name">
+                                </div>
+                                <div class="sm:col-span-1">
+                                    <label for="favorite-energy" class="block text-xs font-medium text-text mb-1">Energy</label>
+                                    <input type="number" id="favorite-energy" inputmode="decimal" step="0.1" min="0" class="w-full rounded-xl bg-surface2 text-text border border-border px-3 py-2 text-sm placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary/50" placeholder="0.0">
+                                </div>
+                                <div class="sm:col-span-1">
+                                    <label for="favorite-energy-unit" class="block text-xs font-medium text-text mb-1">Unit</label>
+                                    <select id="favorite-energy-unit" class="w-full rounded-xl bg-surface2 text-text border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary/50">
+                                        <option value="kj">kJ</option>
+                                        <option value="kcal">kcal</option>
+                                    </select>
+                                </div>
+                                <div class="sm:col-span-1">
+                                    <label for="favorite-per" class="block text-xs font-medium text-text mb-1">Per</label>
+                                    <select id="favorite-per" class="w-full rounded-xl bg-surface2 text-text border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary/50">
+                                        <option value="100g">100g</option>
+                                        <option value="serving">serving</option>
+                                    </select>
+                                </div>
+                            </div>
+                                                         <button id="save-favorite" class="mt-4 w-full inline-flex items-center justify-center rounded-xl bg-primary px-4 py-2.5 font-medium text-primary-foreground hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:ring-offset-2 focus:ring-offset-bg disabled:opacity-50 text-sm transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0 hover:shadow-lg hover:shadow-primary/25">
+                                 Save to Favorites
+                             </button>
+                        </div>
+                        
+                        <!-- Search and Filter -->
+                        <div>
+                            <label for="favorite-search" class="block text-sm font-medium text-text mb-2">Search Favorites</label>
+                            <input type="text" id="favorite-search" class="w-full rounded-xl bg-surface2 text-text border border-border px-4 py-3 text-base placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary/50" placeholder="Search by name...">
+                        </div>
+                        
+                        <!-- Favorites List -->
+                        <div id="favorites-list" class="space-y-2">
+                            <!-- Favorites will be populated by JavaScript -->
+                        </div>
+                    </div>
+                </div>
+            </aside>
+         </div>
+         
+         
+         
+               </main>
+
+    <!-- Footer -->
+    <footer class="border-t border-border bg-surface/80 mt-12">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+            <p class="text-left text-sm text-muted">
+                Informational only. Check packaging/labels for accurate nutritional information.
+            </p>
+        </div>
+    </footer>
+
+    <!-- JavaScript -->
+    <script src="app.js"></script>
+</body>
+</html>
